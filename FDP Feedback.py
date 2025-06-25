@@ -11,10 +11,12 @@ st.set_page_config(page_title="Faculty Feedback - AI Workshop", layout="wide")
 excel_file = "feedback_data.xlsx"
 image_dir = "charts"
 
+# Create Excel if doesn't exist
 if not os.path.exists(excel_file):
-    df_template = pd.DataFrame(columns=["Timestamp"] + [f"Q{i}" for i in range(1, 11)])
-    df_template.to_excel(excel_file, index=False)
+    columns = ["Timestamp", "Name", "Department", "Mobile", "Email"] + [f"Q{i}" for i in range(1, 11)]
+    pd.DataFrame(columns=columns).to_excel(excel_file, index=False)
 
+# Create chart folder
 if not os.path.exists(image_dir):
     os.makedirs(image_dir)
 
@@ -49,19 +51,31 @@ st.markdown("""
 
 # ----- Feedback Form -----
 with st.form("feedback_form"):
+    st.markdown("#### 👤 Faculty Details")
+    name = st.text_input("Name")
+    dept = st.text_input("Department")
+    mobile = st.text_input("Mobile Number")
+    email = st.text_input("Email ID")
+
+    st.markdown("#### 📊 Feedback Questions")
+
     ratings = {}
     for i, q in enumerate(questions, 1):
         st.markdown(f"**{i}. {q}**  \n*(1 = Poor, 5 = Excellent)*")
-        ratings[f"Q{i}"] = st.slider("", 1, 5, 3, key=f"slider_{i}")  # Empty label
+        ratings[f"Q{i}"] = st.slider("", 1, 5, 3, key=f"slider_{i}")
 
     submitted = st.form_submit_button("Submit Feedback")
 
     if submitted:
-        new_data = pd.DataFrame([[datetime.now()] + list(ratings.values())],
-                                columns=["Timestamp"] + list(ratings.keys()))
+        new_data = pd.DataFrame([[
+            datetime.now(), name, dept, mobile, email
+        ] + list(ratings.values())],
+        columns=["Timestamp", "Name", "Department", "Mobile", "Email"] + list(ratings.keys()))
+        
         existing = pd.read_excel(excel_file)
         updated = pd.concat([existing, new_data], ignore_index=True)
         updated.to_excel(excel_file, index=False)
+
         st.success("✅ Thank you! Your feedback has been recorded.")
 
 # ----- Feedback Dashboard -----
@@ -69,6 +83,7 @@ st.markdown("---")
 st.header("📊 Feedback Summary Dashboard")
 
 df = pd.read_excel(excel_file)
+
 col1, col2 = st.columns([2, 1])
 
 with col1:
@@ -82,12 +97,9 @@ with col1:
         ax.set_xlabel("Rating")
         ax.set_ylabel("No. of Responses")
         ax.grid(True, linestyle='--', alpha=0.5)
-
-        # Bold borders
         for spine in ax.spines.values():
             spine.set_linewidth(2)
 
-        # Save each chart
         image_path = os.path.join(image_dir, f"Q{i}_feedback.png")
         fig.savefig(image_path, bbox_inches="tight")
         image_files.append(image_path)
@@ -100,7 +112,6 @@ with col2:
     with open(excel_file, "rb") as f:
         st.download_button("⬇ Download Feedback Excel", f, file_name="faculty_feedback.xlsx")
 
-    # Create ZIP of all PNGs
     import zipfile
     from io import BytesIO
 
