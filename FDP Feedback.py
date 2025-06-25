@@ -4,19 +4,17 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime
 
-# ----- Streamlit App Config -----
+# ----- Config -----
 st.set_page_config(page_title="Faculty Feedback - AI Workshop", layout="wide")
 
-# ----- Files & Folders Setup -----
 excel_file = "feedback_data.xlsx"
 image_dir = "charts"
 
-# Create Excel if doesn't exist
+# ----- Setup Excel and Image Folder -----
 if not os.path.exists(excel_file):
     columns = ["Timestamp", "Name", "Department", "Mobile", "Email"] + [f"Q{i}" for i in range(1, 11)]
     pd.DataFrame(columns=columns).to_excel(excel_file, index=False)
 
-# Create chart folder
 if not os.path.exists(image_dir):
     os.makedirs(image_dir)
 
@@ -38,7 +36,6 @@ questions = [
 st.title("📝 Faculty Feedback Form")
 st.subheader("Two-Day Workshop: Teaching Transformation – AI Tools for NEP Pedagogy")
 
-# ----- Instructions -----
 st.markdown("""
 ### Please rate the following statements based on your experience.  
 **Likert Scale Meaning:**  
@@ -49,7 +46,7 @@ st.markdown("""
 - 5 = Excellent  
 """)
 
-# ----- Feedback Form -----
+# ----- Form -----
 with st.form("feedback_form"):
     st.markdown("#### 👤 Faculty Details")
     name = st.text_input("Name")
@@ -71,14 +68,14 @@ with st.form("feedback_form"):
             datetime.now(), name, dept, mobile, email
         ] + list(ratings.values())],
         columns=["Timestamp", "Name", "Department", "Mobile", "Email"] + list(ratings.keys()))
-        
+
         existing = pd.read_excel(excel_file)
         updated = pd.concat([existing, new_data], ignore_index=True)
         updated.to_excel(excel_file, index=False)
 
         st.success("✅ Thank you! Your feedback has been recorded.")
 
-# ----- Feedback Dashboard -----
+# ----- Dashboard -----
 st.markdown("---")
 st.header("📊 Feedback Summary Dashboard")
 
@@ -107,19 +104,25 @@ with col1:
         st.pyplot(fig)
 
 with col2:
-    st.subheader("📥 Download Section")
+    st.subheader("🔒 Admin Access for Downloads")
+    password_input = st.text_input("Enter admin password:", type="password")
 
-    with open(excel_file, "rb") as f:
-        st.download_button("⬇ Download Feedback Excel", f, file_name="faculty_feedback.xlsx")
+    if password_input == "iqac@bwu":
+        st.success("Access granted ✅")
 
-    import zipfile
-    from io import BytesIO
+        with open(excel_file, "rb") as f:
+            st.download_button("⬇ Download Feedback Excel", f, file_name="faculty_feedback.xlsx")
 
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zipf:
-        for img_path in image_files:
-            zipf.write(img_path, os.path.basename(img_path))
-    zip_buffer.seek(0)
+        import zipfile
+        from io import BytesIO
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as zipf:
+            for img_path in image_files:
+                zipf.write(img_path, os.path.basename(img_path))
+        zip_buffer.seek(0)
 
-    st.download_button("🖼️ Download All Feedback Charts", data=zip_buffer,
-                       file_name="feedback_charts.zip", mime="application/zip")
+        st.download_button("🖼️ Download All Feedback Charts", data=zip_buffer,
+                           file_name="feedback_charts.zip", mime="application/zip")
+
+    elif password_input:
+        st.error("❌ Incorrect password")
