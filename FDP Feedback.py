@@ -11,9 +11,15 @@ json_key = st.secrets["gcp_service_account"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
 client = gspread.authorize(creds)
 
-# ---------- Connect to your specific Google Sheet using ID ----------
-sheet_id = "1FyNxVywrX_H78-2V-H1el5xOBfSKinDnI8af5iRS2Gc"
-sheet = client.open_by_key(sheet_id).sheet1
+# ---------- Connect to Google Sheet using full URL (more reliable than ID) ----------
+sheet_url = "https://docs.google.com/spreadsheets/d/1FyNxVywrX_H78-2V-H1el5xOBfSKinDnI8af5iRS2Gc/edit"
+
+try:
+    sheet = client.open_by_url(sheet_url).sheet1
+except Exception as e:
+    st.error("❌ Could not open the Google Sheet.")
+    st.code(str(e))
+    st.stop()
 
 # ---------- Streamlit UI ----------
 st.set_page_config(page_title="Faculty Feedback - AI Workshop", layout="wide")
@@ -69,8 +75,10 @@ with st.form("feedback_form"):
             timestamp = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
             row_data = [timestamp, name, dept, mobile, email] + list(ratings.values())
+
             try:
                 sheet.append_row(row_data)
                 st.success("✅ Feedback successfully recorded in Google Sheet!")
             except Exception as e:
-                st.error(f"❌ Could not write to Google Sheet. Error: {e}")
+                st.error("❌ Could not write data to the Google Sheet.")
+                st.code(str(e))
