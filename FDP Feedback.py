@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 import gspread
-import pytz
 from datetime import datetime
+import pytz
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ---------- Google Sheets Auth ----------
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("pdf-auto-uploader-0835284833d4.json", scope)
+json_key = st.secrets["gcp_service_account"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
 client = gspread.authorize(creds)
 
 # ---------- Sheet Setup ----------
@@ -67,6 +68,7 @@ with st.form("feedback_form"):
         if not all([name, dept, mobile, email]):
             st.warning("⚠️ Please fill in all details before submitting.")
         else:
+            # Convert to IST
             ist = pytz.timezone('Asia/Kolkata')
             timestamp = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
