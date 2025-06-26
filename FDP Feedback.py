@@ -11,13 +11,9 @@ json_key = st.secrets["gcp_service_account"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
 client = gspread.authorize(creds)
 
-# ---------- Sheet Setup ----------
-sheet_name = "Faculty Feedback Responses"
-try:
-    sheet = client.open(sheet_name).sheet1
-except gspread.exceptions.SpreadsheetNotFound:
-    sheet = client.create(sheet_name).sheet1
-    sheet.append_row(["Timestamp", "Name", "Department", "Mobile", "Email"] + [f"Q{i}" for i in range(1, 11)])
+# ---------- Connect to your specific Google Sheet using ID ----------
+sheet_id = "1FyNxVywrX_H78-2V-H1el5xOBfSKinDnI8af5iRS2Gc"
+sheet = client.open_by_key(sheet_id).sheet1
 
 # ---------- Streamlit UI ----------
 st.set_page_config(page_title="Faculty Feedback - AI Workshop", layout="wide")
@@ -73,5 +69,8 @@ with st.form("feedback_form"):
             timestamp = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
             row_data = [timestamp, name, dept, mobile, email] + list(ratings.values())
-            sheet.append_row(row_data)
-            st.success("✅ Feedback successfully recorded in Google Sheet!")
+            try:
+                sheet.append_row(row_data)
+                st.success("✅ Feedback successfully recorded in Google Sheet!")
+            except Exception as e:
+                st.error(f"❌ Could not write to Google Sheet. Error: {e}")
