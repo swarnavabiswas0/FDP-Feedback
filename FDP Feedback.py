@@ -4,19 +4,15 @@ import gspread
 from datetime import datetime
 import pytz
 from oauth2client.service_account import ServiceAccountCredentials
-import json
 
-# ---------- Load service account from uploaded file ----------
-with open("streamlit-feedback-bot-f6777d687e79.json") as source:
-    json_key = json.load(source)
-
+# --- Auth using secrets.toml ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+json_key = st.secrets["gcp_service_account"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
 client = gspread.authorize(creds)
 
-# ---------- Open your shared Google Sheet ----------
+# --- Open your Google Sheet by URL ---
 sheet_url = "https://docs.google.com/spreadsheets/d/1FyNxVywrX_H78-2V-H1el5xOBfSKinDnI8af5iRS2Gc"
-
 try:
     sheet = client.open_by_url(sheet_url).sheet1
 except Exception as e:
@@ -24,7 +20,7 @@ except Exception as e:
     st.code(str(e))
     st.stop()
 
-# ---------- Streamlit App UI ----------
+# --- Streamlit UI ---
 st.set_page_config(page_title="Faculty Feedback - AI Workshop", layout="wide")
 st.title("📝 Faculty Feedback Form")
 st.subheader("Two-Day Workshop: Teaching Transformation – AI Tools for NEP Pedagogy")
@@ -52,7 +48,6 @@ questions = [
     "Overall, the session met my expectations."
 ]
 
-# ---------- Feedback Form ----------
 with st.form("feedback_form"):
     st.markdown("#### 👤 Faculty Details")
     name = st.text_input("Name")
@@ -63,23 +58,23 @@ with st.form("feedback_form"):
     st.markdown("#### 📊 Feedback Questions")
     ratings = {}
     for i, q in enumerate(questions, 1):
-        st.markdown(f"**{i}. {q}**  \n*(1 = Poor, 5 = Excellent)*")
+        st.markdown(f"**{i}. {q}**")
         ratings[f"Q{i}"] = st.slider("", 1, 5, 3, key=f"slider_{i}")
 
     submitted = st.form_submit_button("Submit Feedback")
 
     if submitted:
         if not all([name, dept, mobile, email]):
-            st.warning("⚠️ Please fill in all details before submitting.")
+            st.warning("⚠️ Please fill in all details.")
         else:
-            # Timestamp in IST
+            # IST Timestamp
             ist = pytz.timezone('Asia/Kolkata')
             timestamp = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
             row_data = [timestamp, name, dept, mobile, email] + list(ratings.values())
             try:
                 sheet.append_row(row_data)
-                st.success("✅ Feedback successfully recorded in Google Sheet!")
+                st.success("✅ Feedback successfully recorded!")
             except Exception as e:
-                st.error("❌ Could not write to the Google Sheet.")
+                st.error("❌ Error writing to sheet.")
                 st.code(str(e))
