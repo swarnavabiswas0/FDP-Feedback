@@ -12,7 +12,8 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
 client = gspread.authorize(creds)
 
 # ---------- Connect to Google Sheet using full URL (more reliable than ID) ----------
-sheet_url = "https://docs.google.com/spreadsheets/d/1FyNxVywrX_H78-2V-H1el5xOBfSKinDnI8af5iRS2Gc/edit"
+sheet_url = sheet_url = "https://docs.google.com/spreadsheets/d/1FyNxVywrX_H78-2V-H1el5xOBfSKinDnI8af5iRS2Gc"
+
 
 try:
     sheet = client.open_by_url(sheet_url).sheet1
